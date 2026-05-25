@@ -1,0 +1,7 @@
+{
+    "display_name": "Dynamic Expressions",
+    "loading_order": 10,
+    "js": "index.js",
+    "author": "AI Assistant",
+    "description": "Dynamically generates character expressions, clothes, and poses via ComfyUI based on roleplay context, replacing static sprites."
+}
