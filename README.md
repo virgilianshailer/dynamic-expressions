@@ -1,4 +1,4 @@
-# 🎭 Dynamic Expressions — SillyTavern Extension
+# 🎭 Dynamic Sprite Expressions — SillyTavern Extension
 
 A SillyTavern extension that **dynamically generates character sprites** based on the current roleplay context, replacing the traditional static `expressions/<emotion>.png` sprite system. Instead of swapping pre-made files, it edits the character's avatar in real time using **FLUX.2 Klein** through ComfyUI / SwarmUI to reflect the character's current emotion, pose, and clothing.
 
