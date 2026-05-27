@@ -103,6 +103,7 @@
 
     // Forcibly restores ALL sprites (for both group and solo modes)
     function forceRestoreAllSprites() {
+        if (!settings || !settings.enabled) return;
         const isGroup = !!scriptModule.selected_group;
         Object.entries(activeSpritesBase64).forEach(([avatarName, b64]) => {
             if (b64) updateUIWithSprite(b64, avatarName, true, isGroup); 
@@ -112,6 +113,18 @@
     }
 
     function restoreSavedSpriteFromStorage() {
+        // Do nothing when the extension is disabled — otherwise the last
+        // generated sprite would be re-injected from localStorage on every
+        // page reload and chat switch, even after the user turned it off.
+        if (!settings || !settings.enabled) {
+            // Also clear any DOM clones we may have left behind from a previous
+            // session so the user sees a clean state immediately.
+            try {
+                $('#visual-novel-wrapper .expression-holder[data-de-clone]').remove();
+                Object.keys(activeSpritesBase64).forEach(k => delete activeSpritesBase64[k]);
+            } catch (e) {}
+            return;
+        }
         if (scriptModule.this_chid === undefined) return;
         const char = scriptModule.characters[scriptModule.this_chid];
         if (!char) return;
@@ -135,6 +148,10 @@
 
     function initSpriteShield() {
         const shieldObserver = new MutationObserver((mutations) => {
+            // If the extension is disabled, the shield must stay completely
+            // passive — otherwise it keeps reinjecting old sprites back into
+            // the DOM whenever ST tries to clear them.
+            if (!settings || !settings.enabled) return;
             if (Object.keys(activeSpritesBase64).length === 0) return;
 
             for (const mutation of mutations) {
@@ -298,7 +315,32 @@
         let $container = $('#extensions_settings2').length ? $('#extensions_settings2') : $('#extensions_settings');
         $container.append(html);
         
-        $('#de-enabled').prop('checked', settings.enabled).on('change', function() { settings.enabled = this.checked; saveSettings(); });
+        $('#de-enabled').prop('checked', settings.enabled).on('change', function() {
+            settings.enabled = this.checked;
+            saveSettings();
+            // If the user just disabled the extension, immediately purge
+            // every trace of generated sprites so the chat returns to its
+            // native state without needing a page reload or chat conversion.
+            if (!settings.enabled) {
+                try {
+                    // 1. Drop in-memory cache so the shield/restorer have nothing to work with.
+                    Object.keys(activeSpritesBase64).forEach(k => delete activeSpritesBase64[k]);
+                    // 2. Clear persisted sprites so they don't come back on reload.
+                    Object.keys(localStorage)
+                        .filter(k => k.startsWith('de_sprite_'))
+                        .forEach(k => localStorage.removeItem(k));
+                    // 3. Remove any holders we cloned into the VN wrapper.
+                    $('#visual-novel-wrapper .expression-holder[data-de-clone]').remove();
+                    // 4. Hide the current sprite image (ST will repopulate naturally if needed).
+                    const $img = $('#expression-image, #visual-novel-wrapper .expression-holder img');
+                    $img.attr('src', '').removeAttr('src');
+                    $('#expression-wrapper, #visual-novel-wrapper').find('.expression-holder').addClass('hidden');
+                    toastr.info('Dynamic Sprites disabled — generated sprites cleared.');
+                } catch (e) {
+                    console.warn('[DynamicExpressions] Cleanup on disable failed:', e);
+                }
+            }
+        });
         $('#de-skip-non-chars').prop('checked', settings.skipNonCharacters !== false).on('change', function() { settings.skipNonCharacters = this.checked; saveSettings(); });
         $('#de-override-existing').prop('checked', settings.overrideExistingSprites === true).on('change', function() {
             settings.overrideExistingSprites = this.checked;
