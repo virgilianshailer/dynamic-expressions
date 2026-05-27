@@ -1,5 +1,5 @@
 /*
- * DynamicExpressions  — Absolute Visual Novel Sprite Lock
+ * Dynamic Sprite Expressions — Absolute Visual Novel Sprite Lock
  * Fixes: Unyielding Shield against ST core clearing sprites on user message.
  */
 
